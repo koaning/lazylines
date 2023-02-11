@@ -1,6 +1,8 @@
 import time 
+import pprint
 import srsly
 from clumper import Clumper
+import itertools as it
 
 def read_jsonl(path):
     return LazyClumper(srsly.read_jsonl(path))
@@ -52,9 +54,18 @@ class LazyClumper:
             for _ in range(n):
                 yield next(self.g)
         return LazyClumper(g=new_gen())
+    
+    def show(self, n=5):
+        stream_orig, stream_copy = it.tee(self.g)
+        for _ in range(n):
+            pprint.pprint(next(stream_copy))
+        return LazyClumper(g=stream_orig)
 
     def collect(self):
         return [ex for ex in self.g]
+    
+    def write_jsonl(self, path):
+        srsly.write_jsonl(path, self.g)
 
 # print(list(read_jsonl("examples.jsonl").collect()))
 tic = time.time()
