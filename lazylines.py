@@ -68,6 +68,26 @@ class LazyClumper:
                 yield func(item)
         return LazyClumper(g=new_gen())
     
+    def tee(self, n=2):
+        return tuple(LazyClumper(g=gen) for gen in it.tee(self.g, n=n))
+
+    def agg(self, *args, **kwargs):
+        """The args represent the groups, the kwargs hold the operations.
+        
+        ```python
+        clump.agg("a", "b", 
+                  n=len, 
+                  mean=lambda d: sum([_['col'] for _ in d])/len(d))
+        ```
+        """
+        stream_orig, stream_copy = self.tee()
+        for arg in args:
+            stream_orig, stream_copy = stream_copy.tee()
+            values = set(stream_copy.map(lambda d: d[arg]))
+            for val in values:
+                subset = self.keep(lambda d: d[arg] == val)
+                # yield {}
+                
     def progress(self):
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
