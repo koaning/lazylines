@@ -1,3 +1,4 @@
+import tqdm 
 import time 
 import pprint
 import srsly
@@ -60,6 +61,17 @@ class LazyClumper:
         for _ in range(n):
             pprint.pprint(next(stream_copy))
         return LazyClumper(g=stream_orig)
+    
+    def map(self, func):
+        def new_gen():
+            for item in self.g:
+                yield func(item)
+        return LazyClumper(g=new_gen())
+    
+    def progress(self):
+        stream_orig, stream_copy = it.tee(self.g)
+        total = sum(1 for _ in stream_copy)
+        return LazyClumper(g=tqdm.tqdm(stream_orig, total=total))
 
     def collect(self):
         return [ex for ex in self.g]
@@ -68,10 +80,17 @@ class LazyClumper:
         srsly.write_jsonl(path, self.g)
 
 # print(list(read_jsonl("examples.jsonl").collect()))
-tic = time.time()
-c = read_jsonl("examples.jsonl").mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(100).collect()
-toc = time.time()
 
+# examples = ({"text": f"example {i}"} for i in range(10_000))
+# srsly.write_jsonl("examples.jsonl", examples)
+
+def sleep_pass(item):
+    time.sleep(0.1)
+    return item
+
+tic = time.time()
+c = read_jsonl("examples.jsonl").map(sleep_pass).mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(1).collect()
+toc = time.time()
 print(toc - tic)
 
 
