@@ -15,9 +15,11 @@ Methods I still gotta add:
 - [ ] `.foreach()`
 - [ ] `.drop()`
 - [ ] `.sort()`
+- [ ] `.pipe()`
 
 Things that might be nice:
 
+- [ ] something that can automate the docs for me
 - [ ] a column selector that's faster than using lambdas all the time 
 - [ ] maybe something clever with pydantic? I think `foreach` should have that covered though
 - [ ] a sublibrary/command line interface for some common Prodigy tasks 
