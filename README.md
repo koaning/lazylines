@@ -16,6 +16,8 @@ Methods I still gotta add:
 - [ ] `.drop()`
 - [ ] `.sort()`
 - [ ] `.pipe()`
+- [ ] `.rename()`
+- [ ] `.dedup()
 
 Things that might be nice:
 
