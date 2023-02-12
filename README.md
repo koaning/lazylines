@@ -23,6 +23,3 @@ Things that might be nice:
 - [ ] a column selector that's faster than using lambdas all the time 
 - [ ] maybe something clever with pydantic? I think `foreach` should have that covered though
 - [ ] a sublibrary/command line interface for some common Prodigy tasks 
-
-### This reminds me of something 
-
