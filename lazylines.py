@@ -8,6 +8,8 @@ import itertools as it
 def read_jsonl(path):
     return LazyClumper(srsly.read_jsonl(path))
 
+def nest_by(*args):
+    pass
 
 class LazyClumper:
     def __init__(self, g):
@@ -69,9 +71,12 @@ class LazyClumper:
         return LazyClumper(g=new_gen())
     
     def tee(self, n=2):
-        return tuple(LazyClumper(g=gen) for gen in it.tee(self.g, n=n))
+        return tuple(LazyClumper(g=gen) for gen in it.tee(self.g, n))
+    
+    def __iter__(self):
+        return self.g
 
-    def agg(self, *args, **kwargs):
+    def group_by(self, *args):
         """The args represent the groups, the kwargs hold the operations.
         
         ```python
@@ -80,14 +85,22 @@ class LazyClumper:
                   mean=lambda d: sum([_['col'] for _ in d])/len(d))
         ```
         """
-        stream_orig, stream_copy = self.tee()
-        for arg in args:
-            stream_orig, stream_copy = stream_copy.tee()
-            values = set(stream_copy.map(lambda d: d[arg]))
-            for val in values:
-                subset = self.keep(lambda d: d[arg] == val)
-                # yield {}
-                
+        groups = {}
+        for example in self.g:
+            key = tuple(example.get(arg, None) for arg in args)
+            if key not in groups:
+                groups[key] = []
+            for arg in args:
+                del example[arg]
+            groups[key].append(example)
+        result = []
+        for key, values in groups.items():
+            result.append({
+                **{k: v for k, v in zip(args, key)},
+                "subset": values
+            })
+        return LazyClumper(result)
+                 
     def progress(self):
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
@@ -101,22 +114,26 @@ class LazyClumper:
 
 # print(list(read_jsonl("examples.jsonl").collect()))
 
-# examples = ({"text": f"example {i}"} for i in range(10_000))
-# srsly.write_jsonl("examples.jsonl", examples)
+import random
+examples = ({"number": i, "group_a": random.random() < 0.5, "group_b": random.random() < 0.5} for i in range(20))
+srsly.write_jsonl("examples.jsonl", examples)
 
 def sleep_pass(item):
     time.sleep(0.1)
     return item
 
-tic = time.time()
-c = read_jsonl("examples.jsonl").map(sleep_pass).mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(1).collect()
-toc = time.time()
-print(toc - tic)
+import pprint
+read_jsonl("examples.jsonl").group_by("group_a", "group_b").show(4)
+
+# tic = time.time()
+# c = read_jsonl("examples.jsonl").map(sleep_pass).mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(1).collect()
+# toc = time.time()
+# print(toc - tic)
 
 
 
-tic = time.time()
-Clumper.read_jsonl("examples.jsonl").mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(100).collect()
-toc = time.time()
+# tic = time.time()
+# Clumper.read_jsonl("examples.jsonl").mutate(text2 = lambda d: d['text'] * 2, text3 = lambda d: d['text'] * 3).head(100).collect()
+# toc = time.time()
 
-print(toc - tic)
+# print(toc - tic)
