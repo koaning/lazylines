@@ -7,7 +7,7 @@ At the moment this repo is still a work in progress. I'm still uncertain about t
 ### Stuff I'd like to do. 
 
 - [ ] decide if I like `nest_by` better than `group_by` 
-- [ ] think about how to do aggregations
+- [ ] think about how to do aggregations, maybe add a submodule with easy aggregation functions
 
 Methods I still gotta add:
 
@@ -17,7 +17,7 @@ Methods I still gotta add:
 - [ ] `.sort()`
 - [ ] `.pipe()`
 - [ ] `.rename()`
-- [ ] `.dedup()
+- [ ] `.dedup()`
 
 Things that might be nice:
 
