@@ -19,6 +19,7 @@ Methods I still gotta add:
 
 Things that might be nice:
 
+- [ ] some spaCy helpers that can attach specific information in the right format
 - [ ] something that can automate the docs for me
 - [ ] a column selector that's faster than using lambdas all the time 
 - [ ] maybe something clever with pydantic? I think `foreach` should have that covered though
