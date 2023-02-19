@@ -10,8 +10,11 @@ At the moment this repo is still a work in progress.
 
 ### Stuff I'd like to do. 
 
-- [ ] decide if I like `nest_by` better than `group_by` 
-- [ ] think about how to do aggregations, maybe add a submodule with easy aggregation functions
+- [ ] add a submodule with easy aggregation functions
+  - [ ] count()
+  - [ ] mean() 
+  - [ ] unique()
+  - [ ] n_unique()
 
 Methods I still gotta add:
 
