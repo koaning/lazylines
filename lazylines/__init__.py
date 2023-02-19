@@ -12,35 +12,30 @@ def read_jsonl(path):
 
 
 class LazyLines:
+    """
+    An object that can wrangle .jsonl-like files.
+
+    ```python
+    from lazylines import LazyLines
+    ```
+    """
     def __init__(self, g):
         self.g = g
         self.groups = set()
 
     def cache(self):
-        """Cache the result internally by turning it into a list.
+        """
+        Cache the result internally by turning it into a list.
 
         It's recommended to store this into another variable to enjoy
         the speedup that comes at the cost of memory.
         """
         return LazyLines(g=list(self.g))
 
-    def equals(self, other: List):
-        """Compares contents with list.
-        
-        Usage:
 
-        ```python
-        from lazylines import Lazylines 
-
-        items == [{"a": 1}]
-
-        assert Lazylines(items).equals(items)
-        ```
-        """
-        return self.collect() == other
-        
     def mutate(self, **kwargs):
-        """Adds/overwrites keys in the dictionary based on lambda.
+        """
+        Adds/overwrites keys in the dictionary based on lambda.
         """
 
         def new_gen():
@@ -52,7 +47,9 @@ class LazyLines:
         return LazyLines(g=new_gen())
 
     def keep(self, *args):
-        """Only keep a subset of the items in the generator based on lambda."""
+        """
+        Only keep a subset of the items in the generator based on lambda.
+        """
 
         def new_gen():
             for item in self.g:
@@ -80,7 +77,9 @@ class LazyLines:
         return LazyLines(g=new_gen())
 
     def head(self, n=5):
-        """Make a subset and only return the top `n` items."""
+        """
+        Make a subset and only return the top `n` items.
+        """
         if isinstance(self.g, list):
             return LazyLines(g=(i for i in self.g[:5]))
 
@@ -91,7 +90,9 @@ class LazyLines:
         return LazyLines(g=new_gen())
 
     def show(self, n=5):
-        """Give a preview of the first `n` examples."""
+        """
+        Give a preview of the first `n` examples.
+        """
         stream_orig, stream_copy = it.tee(self.g)
         for _ in range(n):
             pprint.pprint(next(stream_copy))
@@ -114,7 +115,8 @@ class LazyLines:
         return self.g
 
     def nest_by(self, *args):
-        """Group by keys and return nested collections.
+        """
+        Group by keys and return nested collections.
 
         The opposite of `.explode()`
         """
