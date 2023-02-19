@@ -1,3 +1,4 @@
+from typing import List 
 import itertools as it
 import pprint
 
@@ -19,12 +20,28 @@ class LazyLines:
         """Cache the result internally by turning it into a list.
 
         It's recommended to store this into another variable to enjoy
-        the speedup that came at the cost of memory.
+        the speedup that comes at the cost of memory.
         """
         return LazyLines(g=list(self.g))
 
+    def equals(self, other: List):
+        """Compares contents with list.
+        
+        Usage:
+
+        ```python
+        from lazylines import Lazylines 
+
+        items == [{"a": 1}]
+
+        assert Lazylines(items).equals(items)
+        ```
+        """
+        return self.collect() == other
+        
     def mutate(self, **kwargs):
-        """Adds/overwrites keys in the dictionary based on lambda."""
+        """Adds/overwrites keys in the dictionary based on lambda.
+        """
 
         def new_gen():
             for item in self.g:
