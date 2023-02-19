@@ -91,6 +91,21 @@ class LazyLines:
         return LazyLines(g=new_gen())
 
     def explode(self, key):
+        """
+        Explodes a key, effectively un-nesting it. 
+
+        **Usage**:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [{'a': 1, 'items': [1, 2]}]
+
+        result = LazyLines(data).explode("items")
+        expected = [{'a': 1, 'items': 1}, {'a': 1, 'items': 2}]
+        assert result.collect() == expected
+        ```
+        """
         def new_gen():
             for item in self.g:
                 for value in item[key]:
