@@ -3,6 +3,8 @@ from lazylines import LazyLines
 import pytest
 from mktestdocs import check_docstring, get_codeblock_members
 
+import inspect
+import textwrap
 
 # Note the use of `__qualname__`, makes for pretty output
 @pytest.mark.parametrize("obj", get_codeblock_members(LazyLines), ids=lambda d: d.__qualname__)

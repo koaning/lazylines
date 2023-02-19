@@ -29,6 +29,15 @@ class LazyLines:
 
         It's recommended to store this into another variable to enjoy
         the speedup that comes at the cost of memory.
+
+        ```python
+        from lazylines import LazyLines 
+
+        items = ({"a": i} for i in range(100))
+
+        # The intermediate representation is now a list. 
+        cached = (LazyLines(items).cache())
+        ```
         """
         return LazyLines(g=list(self.g))
 
@@ -36,6 +45,17 @@ class LazyLines:
     def mutate(self, **kwargs):
         """
         Adds/overwrites keys in the dictionary based on lambda.
+
+        **Usage**:
+        
+        ```python
+        from lazylines import LazyLines 
+
+        items = [{"a": 2}, {"a": 3}]
+        results = (LazyLines(items).mutate(b=lambda d: d["a"] * 2))
+        expected = [{"a": 2, "b": 4}, {"a": 3, "b": 6}]
+        assert results.collect() == expected
+        ```
         """
 
         def new_gen():
@@ -49,6 +69,17 @@ class LazyLines:
     def keep(self, *args):
         """
         Only keep a subset of the items in the generator based on lambda.
+
+        **Usage**:
+
+        ```python
+        from lazylines import LazyLines 
+
+        items = [{"a": 2}, {"a": 3}]
+        results = (LazyLines(items).keep(lambda d: d["a"] % 2 == 0))
+        expected = [{"a": 2}]
+        assert results.collect() == expected
+        ```
         """
 
         def new_gen():
