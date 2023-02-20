@@ -90,7 +90,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def explode(self, key):
+    def unnest(self, key):
         """
         Explodes a key, effectively un-nesting it. 
 
@@ -99,26 +99,30 @@ class LazyLines:
         ```python
         from lazylines import LazyLines
 
-        data = [{'a': 1, 'items': [1, 2]}]
+        data = [{'annotator': 'a', 
+                 'subset': [{'accept': True, 'text': 'foo'},
+                            {'accept': True, 'text': 'foobar'}]},
+                {'annotator': 'b',
+                 'subset': [{'accept': True, 'text': 'foo'},
+                            {'accept': True, 'text': 'foobar'}]}]
+        
+        expected = [
+            {'accept': True, 'annotator': 'a', 'text': 'foo'},
+            {'accept': True, 'annotator': 'a', 'text': 'foobar'},
+            {'accept': True, 'annotator': 'b', 'text': 'foo'},
+            {'accept': True, 'annotator': 'b', 'text': 'foobar'}
+        ]
 
-        result = LazyLines(data).explode("items")
-        expected = [{'a': 1, 'items': 1}, {'a': 1, 'items': 2}]
+        result = LazyLines(data).unnest("subset")
         assert result.collect() == expected
         ```
         """
         def new_gen():
             for item in self.g:
                 for value in item[key]:
-                    yield {**item, key: value}
-
-        return LazyLines(g=new_gen())
-
-    def unpack(self, key):
-        def new_gen():
-            for item in self.g:
-                addition = {**item[key]}
-                del item[key]
-                yield {**item, **addition}
+                    orig = {k: v for k, v in item.items() if k != key}
+                    d = {**value, **orig}
+                    yield d
 
         return LazyLines(g=new_gen())
 
@@ -164,7 +168,32 @@ class LazyLines:
         """
         Group by keys and return nested collections.
 
-        The opposite of `.explode()`
+        The opposite of `.unnest()`
+
+        **Usage**:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [
+            {'accept': True, 'annotator': 'a', 'text': 'foo'},
+            {'accept': True, 'annotator': 'a', 'text': 'foobar'},
+            {'accept': True, 'annotator': 'b', 'text': 'foo'},
+            {'accept': True, 'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        expected = [
+                {'annotator': 'a', 
+                 'subset': [{'accept': True, 'text': 'foo'},
+                            {'accept': True, 'text': 'foobar'}]},
+                {'annotator': 'b',
+                 'subset': [{'accept': True, 'text': 'foo'},
+                            {'accept': True, 'text': 'foobar'}]}
+        ]
+        
+        result = LazyLines(data).nest_by("annotator")
+        assert result.collect() == expected
+        ```
         """
         groups = {}
         for example in self.g:
