@@ -163,6 +163,9 @@ class LazyLines:
 
     def __iter__(self):
         return self.g
+    
+    def sort_by(self, *cols):
+        return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in cols])))
 
     def nest_by(self, *args):
         """
