@@ -169,6 +169,7 @@ class LazyLines:
         return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in cols])))
     
     def rename(self, **kwargs):
+        """Rename a few keys in each item."""
         def new_gen():
             for item in self.g:
                 new_items = {k: item[v] for k, v in kwargs.items()}
