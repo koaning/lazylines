@@ -165,7 +165,17 @@ class LazyLines:
         return self.g
     
     def sort_by(self, *cols):
+        """Sort the items."""
         return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in cols])))
+    
+    def rename(self, **kwargs):
+        def new_gen():
+            for item in self.g:
+                new_items = {k: item[v] for k, v in kwargs.items()}
+                yield {**item, **new_items}
+        
+        return LazyLines(g=new_gen())
+        
 
     def nest_by(self, *args):
         """
