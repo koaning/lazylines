@@ -1,4 +1,6 @@
-from typing import List 
+from __future__ import annotations
+from typing import List, Union, Tuple
+from pathlib import Path
 import itertools as it
 import pprint
 
@@ -6,7 +8,7 @@ import srsly
 import tqdm
 
 
-def read_jsonl(path):
+def read_jsonl(path: Union[str, Path]) -> LazyLines:
     """Read .jsonl file and turn it into a LazyLines object."""
     return LazyLines(srsly.read_jsonl(path))
 
@@ -23,7 +25,7 @@ class LazyLines:
         self.g = g
         self.groups = set()
 
-    def cache(self):
+    def cache(self) -> LazyLines:
         """
         Cache the result internally by turning it into a list.
 
@@ -42,7 +44,7 @@ class LazyLines:
         return LazyLines(g=list(self.g))
 
 
-    def mutate(self, **kwargs):
+    def mutate(self, **kwargs) -> LazyLines:
         """
         Adds/overwrites keys in the dictionary based on lambda.
 
@@ -66,7 +68,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def keep(self, *args):
+    def keep(self, *args) -> LazyLines:
         """
         Only keep a subset of the items in the generator based on lambda.
 
@@ -90,7 +92,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def unnest(self, key):
+    def unnest(self, key) -> LazyLines:
         """
         Explodes a key, effectively un-nesting it. 
 
@@ -126,7 +128,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def head(self, n=5):
+    def head(self, n=5) -> LazyLines:
         """
         Make a subset and only return the top `n` items.
         """
@@ -139,7 +141,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def show(self, n=5):
+    def show(self, n=5) -> LazyLines:
         """
         Give a preview of the first `n` examples.
         """
@@ -148,7 +150,7 @@ class LazyLines:
             pprint.pprint(next(stream_copy))
         return LazyLines(g=stream_orig)
 
-    def map(self, func):
+    def map(self, func) -> LazyLines:
         """Apply a function to each item before yielding it back."""
 
         def new_gen():
@@ -157,18 +159,18 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def tee(self, n=2):
+    def tee(self, n=2) -> Tuple[LazyLines]:
         """Copies the lazylines."""
         return tuple(LazyLines(g=gen) for gen in it.tee(self.g, n))
 
     def __iter__(self):
         return self.g
     
-    def sort_by(self, *cols):
+    def sort_by(self, *cols) -> LazyLines:
         """Sort the items."""
         return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in cols])))
     
-    def rename(self, **kwargs):
+    def rename(self, **kwargs) -> LazyLines:
         """Rename a few keys in each item."""
         def new_gen():
             for item in self.g:
@@ -178,7 +180,7 @@ class LazyLines:
         return LazyLines(g=new_gen())
         
 
-    def nest_by(self, *args):
+    def nest_by(self, *args) -> LazyLines:
         """
         Group by keys and return nested collections.
 
@@ -222,21 +224,21 @@ class LazyLines:
             result.append({**{k: v for k, v in zip(args, key)}, "subset": values})
         return LazyLines(result)
 
-    def progress(self):
+    def progress(self) -> LazyLines:
         """Adds a progress bar. Meant to be used early."""
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
         return LazyLines(g=tqdm.tqdm(stream_orig, total=total))
 
-    def collect(self):
+    def collect(self) -> LazyLines:
         """Turns the collection into a list."""
         return [ex for ex in self.g]
 
-    def write_jsonl(self, path):
+    def write_jsonl(self, path) -> LazyLines:
         """Write everything into a jsonl file again."""
         srsly.write_jsonl(path, self.g)
 
-    def select(self, *args):
+    def select(self, *args) -> LazyLines:
         """Only select specific keys from each dictionary."""
 
         def new_gen():
@@ -245,7 +247,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def drop(self, *args):
+    def drop(self, *args) -> LazyLines:
         """Drop specific keys from each dictionary."""
 
         def new_gen():
@@ -254,13 +256,14 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def pipe(self, func, *args, **kwargs):
+    def pipe(self, func, *args, **kwargs) -> LazyLines:
         """Call a function over the entire generator."""
         return LazyLines(g=func(self.g, *args, **kwargs))
 
-    def foreach(self, func, *args, **kwargs):
+    def foreach(self, func, *args, **kwargs) -> LazyLines:
         """Just call a function on each dictionary, but pass the original forward."""
-        stream_orig, stream_copy = self.tee()
-        for item in stream_copy:
-            func(item, *args, **kwargs)
-        return LazyLines(g=stream_orig)
+        def new_gen():
+            for ex in self.g:
+                func(ex, *args, **kwargs)
+                yield ex
+        return LazyLines(g=new_gen())
