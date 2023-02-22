@@ -29,7 +29,7 @@ def read(fname):
 
 setup(
     name="lazylines",
-    version="0.1.0",
+    version="0.0.1",
     author="Vincent D. Warmerdam",
     long_description=read("README.md"),
     packages=find_packages(include=["lazylines", "lazylines.*"]),
