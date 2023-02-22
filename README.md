@@ -16,12 +16,6 @@ At the moment this repo is still a work in progress.
   - [ ] unique()
   - [ ] n_unique()
 
-Methods I still gotta add:
-
-- [ ] `.sort()`
-- [ ] `.rename()`
-- [ ] `.dedup()`
-
 Things that might be nice:
 
 - [ ] some spaCy helpers that can attach specific information in the right format
