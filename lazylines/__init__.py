@@ -247,7 +247,7 @@ class LazyLines:
 
         def new_gen():
             for ex in self.g:
-                yield {k: v for k, v in ex.items() if v in args}
+                yield {k: v for k, v in ex.items() if k in args}
 
         return LazyLines(g=new_gen())
 
@@ -262,7 +262,7 @@ class LazyLines:
 
     def pipe(self, func, *args, **kwargs) -> LazyLines:
         """Call a function over the entire generator."""
-        return LazyLines(g=func(self.g, *args, **kwargs))
+        return LazyLines(g=func(self, *args, **kwargs))
 
     def foreach(self, func, *args, **kwargs) -> LazyLines:
         """Just call a function on each dictionary, but pass the original forward."""
@@ -273,3 +273,9 @@ class LazyLines:
                 yield ex
 
         return LazyLines(g=new_gen())
+    
+    def agg(self, **kwargs):
+        data = [ex for ex in self.g]
+        return {
+            k: func(data) for k, func in kwargs.items()
+        }
