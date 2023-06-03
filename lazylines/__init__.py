@@ -128,7 +128,7 @@ class LazyLines:
             for item in self.g:
                 for value in item[key]:
                     orig = {k: v for k, v in item.items() if k != key}
-                    d = {**value, **orig}
+                    d = {**{key: value}, **orig}
                     yield d
 
         return LazyLines(g=new_gen())
