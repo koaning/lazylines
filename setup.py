@@ -16,7 +16,7 @@ test_packages = [
 
 docs_packages = [
     "mkdocs-material",
-    "mkdocstrings",
+    "mkdocstrings-python",
 ]
 
 dev_packages = test_packages + docs_packages

@@ -27,15 +27,15 @@ theme:
   palette:
     # Palette toggle for light mode
     - scheme: default
-      primary: black
-      accent: light blue
+      primary: grey
+      accent: light green
       toggle:
         icon: material/weather-sunny 
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
-      primary: black
-      accent: light blue
+      primary: grey
+      accent: light green
       toggle:
         icon: material/weather-night
         name: Switch to light mode
