@@ -15,9 +15,8 @@ test_packages = [
 ]
 
 docs_packages = [
-    "mkdocs>=1.1",
-    "mkdocs-material>=4.6.3",
-    "mkdocstrings>=0.8.0",
+    "mkdocs-material",
+    "mkdocstrings",
 ]
 
 dev_packages = test_packages + docs_packages

@@ -93,9 +93,12 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def unnest(self, key) -> LazyLines:
+    def unnest(self, key: str) -> LazyLines:
         """
         Explodes a key, effectively un-nesting it.
+
+        Arguments:
+            key: the key to use while nesting
 
         **Usage**:
 
