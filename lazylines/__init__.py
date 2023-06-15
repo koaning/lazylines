@@ -67,7 +67,7 @@ class LazyLines:
             for item in self.g:
                 for k, v in kwargs.items():
                     item[k] = v(item)
-                    yield item
+                yield item
 
         return LazyLines(g=new_gen())
 
