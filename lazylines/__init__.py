@@ -206,7 +206,7 @@ class LazyLines:
         return tuple(LazyLines(g=gen) for gen in it.tee(self.g, n))
 
     def __iter__(self):
-        return self.g
+        return iter(self.g)
 
     def sort_by(self, *keys: str) -> LazyLines:
         """
