@@ -2,6 +2,7 @@ site_name: lazylines
 site_description: Functional jsonl API
 nav:
   - Index: index.md
+  - Examples: examples.md
   - API: api.md
   
 theme:
@@ -28,14 +29,14 @@ theme:
     # Palette toggle for light mode
     - scheme: default
       primary: grey
-      accent: light green
+      accent: black
       toggle:
         icon: material/weather-sunny 
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
       primary: grey
-      accent: light green
+      accent: black
       toggle:
         icon: material/weather-night
         name: Switch to light mode

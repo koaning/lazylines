@@ -92,9 +92,12 @@ class LazyLines:
 
         def new_gen():
             for item in self.g:
+                allowed = True
                 for func in args:
-                    if func(item):
-                        yield item
+                    if not func(item):
+                        allowed = False
+                if allowed:
+                    yield item
 
         return LazyLines(g=new_gen())
 
@@ -291,15 +294,15 @@ class LazyLines:
         """
         groups = {}
         for example in self.g:
-            key = tuple(example.get(arg, None) for arg in args)
+            key = tuple(example.get(arg, None) for arg in keys)
             if key not in groups:
                 groups[key] = []
-            for arg in args:
+            for arg in keys:
                 del example[arg]
             groups[key].append(example)
         result = []
         for key, values in groups.items():
-            result.append({**{k: v for k, v in zip(args, key)}, "subset": values})
+            result.append({**{k: v for k, v in zip(keys, key)}, "subset": values})
         return LazyLines(result)
 
     def progress(self) -> LazyLines:
@@ -363,7 +366,7 @@ class LazyLines:
 
         def new_gen():
             for ex in self.g:
-                yield {k: v for k, v in ex.items() if k in args}
+                yield {k: v for k, v in ex.items() if k in keys}
 
         return LazyLines(g=new_gen())
 
