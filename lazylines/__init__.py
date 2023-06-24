@@ -136,7 +136,6 @@ class LazyLines:
             for item in self.g:
                 for value in item[key]:
                     orig = {k: v for k, v in item.items() if k != key}
-                    print(orig, value)
                     d = {**value, **orig}
                     yield d
 
@@ -307,7 +306,7 @@ class LazyLines:
             result.append({**{k: v for k, v in zip(keys, key)}, "subset": values})
         return LazyLines(result)
 
-    def progress(self, desc=Optional[str]) -> LazyLines:
+    def progress(self, desc:Optional[str]=None) -> LazyLines:
         """Adds a progress bar. Meant to be used early."""
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)

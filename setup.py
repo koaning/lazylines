@@ -28,7 +28,7 @@ def read(fname):
 
 setup(
     name="lazylines",
-    version="0.0.2",
+    version="0.0.4",
     author="Vincent D. Warmerdam",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",

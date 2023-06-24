@@ -20,14 +20,6 @@ def to_nested_pairs(lines: LazyLines , subset_key: str="subset"):
             yield {**ex, "subset": [c1, c2]}
 
 
-def pluck_from_subset(key: LazyLines , subset_key: str="subset"):
-    def func(item):
-        arr = item[subset_key]
-        return [ex[key] for ex in arr if key in ex]
-    return func 
-
-
-
 def pluck_from_subset(key:str, subset_key:str="subset"):
     def func(item):
         arr = item[subset_key]
