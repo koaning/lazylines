@@ -313,7 +313,10 @@ class LazyLines:
         """
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
-        return LazyLines(g=tqdm.tqdm(stream_orig, total=total))
+        def new_gen():
+            for ex in tqdm.tqdm(stream_orig, total=total):
+                yield ex
+        return LazyLines(g=new_gen()
 
     def collect(self) -> LazyLines:
         """
