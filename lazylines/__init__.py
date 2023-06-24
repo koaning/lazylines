@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools as it
 import pprint
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import srsly
 import tqdm
@@ -229,11 +229,11 @@ class LazyLines:
             result.append({**{k: v for k, v in zip(args, key)}, "subset": values})
         return LazyLines(result)
 
-    def progress(self) -> LazyLines:
+    def progress(self, desc: Optional[str] = None) -> LazyLines:
         """Adds a progress bar. Meant to be used early."""
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
-        return LazyLines(g=tqdm.tqdm(stream_orig, total=total))
+        return LazyLines(g=tqdm.tqdm(stream_orig, total=total, desc=desc))
 
     def collect(self) -> LazyLines:
         """Turns the collection into a list."""
