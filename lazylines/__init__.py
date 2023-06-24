@@ -127,8 +127,8 @@ class LazyLines:
             {'accept': True, 'annotator': 'b', 'text': 'foobar'}
         ]
 
-        result = LazyLines(data).unnest("subset")
-        assert result.collect() == expected
+        result = LazyLines(data).unnest("subset").collect()
+        assert result == expected
         ```
         """
 
@@ -136,7 +136,8 @@ class LazyLines:
             for item in self.g:
                 for value in item[key]:
                     orig = {k: v for k, v in item.items() if k != key}
-                    d = {**{key: value}, **orig}
+                    print(orig, value)
+                    d = {**value, **orig}
                     yield d
 
         return LazyLines(g=new_gen())
@@ -253,8 +254,9 @@ class LazyLines:
 
         def new_gen():
             for item in self.g:
-                new_items = {k: item[v] for k, v in kwargs.items()}
-                yield {**item, **new_items}
+                old = {k: v for k, v in item.items() if k not in kwargs.values()}
+                new = {k: item[v] for k, v in kwargs.items()}
+                yield {**old, **new}
 
         return LazyLines(g=new_gen())
 
@@ -313,7 +315,7 @@ class LazyLines:
         def new_gen():
             for ex in tqdm.tqdm(stream_orig, total=total, desc=desc):
                 yield ex
-                
+
         return LazyLines(g=new_gen())
 
     def collect(self) -> LazyLines:
