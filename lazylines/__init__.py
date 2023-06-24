@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools as it
 import pprint
 from pathlib import Path
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union, Dict, Callable, Optional
 
 import srsly
 import tqdm
@@ -16,7 +16,7 @@ def read_jsonl(path: Union[str, Path]) -> LazyLines:
 
 class LazyLines:
     """
-    An object that can wrangle .jsonl-like files.
+    An object that can wrangle iterables of dictionaries (similar to JSONL).
 
     ```python
     from lazylines import LazyLines
@@ -31,8 +31,7 @@ class LazyLines:
         """
         Cache the result internally by turning it into a list.
 
-        It's recommended to store this into another variable to enjoy
-        the speedup that comes at the cost of memory.
+        It's recommended to store the result into another variable.
 
         ```python
         from lazylines import LazyLines
@@ -45,9 +44,12 @@ class LazyLines:
         """
         return LazyLines(g=list(self.g))
 
-    def mutate(self, **kwargs) -> LazyLines:
+    def mutate(self, **kwargs: Dict[str, Callable]) -> LazyLines:
         """
         Adds/overwrites keys in the dictionary based on lambda.
+
+        Arguments:
+            kwargs: str/callable pairs that represent keys and a function to calculate it's value
 
         **Usage**:
 
@@ -65,13 +67,16 @@ class LazyLines:
             for item in self.g:
                 for k, v in kwargs.items():
                     item[k] = v(item)
-                    yield item
+                yield item
 
         return LazyLines(g=new_gen())
 
-    def keep(self, *args) -> LazyLines:
+    def keep(self, *args: Callable) -> LazyLines:
         """
         Only keep a subset of the items in the generator based on lambda.
+
+        Arguments:
+            args: functions that can be used to filter the data, if it outputs `True` it will be kept around
 
         **Usage**:
 
@@ -87,18 +92,21 @@ class LazyLines:
 
         def new_gen():
             for item in self.g:
+                allowed = True
                 for func in args:
-                    if func(item):
-                        yield item
+                    if not func(item):
+                        allowed = False
+                if allowed:
+                    yield item
 
         return LazyLines(g=new_gen())
 
-    def unnest(self, key: str) -> LazyLines:
+    def unnest(self, key: str="subset") -> LazyLines:
         """
         Explodes a key, effectively un-nesting it.
 
         Arguments:
-            key: the key to use while nesting
+            key: the key to un-nest
 
         **Usage**:
 
@@ -136,6 +144,9 @@ class LazyLines:
     def head(self, n=5) -> LazyLines:
         """
         Make a subset and only return the top `n` items.
+
+        Arguments:
+            n: the number of examples to take
         """
         if isinstance(self.g, list):
             return LazyLines(g=(i for i in self.g[:5]))
@@ -146,17 +157,25 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def show(self, n=5) -> LazyLines:
+    def show(self, n: int=5) -> LazyLines:
         """
-        Give a preview of the first `n` examples.
+        Give a preview of the first `n` examples. 
+
+        Arguments:
+            n: the number of examples to preview
         """
         stream_orig, stream_copy = it.tee(self.g)
         for _ in range(n):
             pprint.pprint(next(stream_copy))
         return LazyLines(g=stream_orig)
 
-    def map(self, func) -> LazyLines:
-        """Apply a function to each item before yielding it back."""
+    def map(self, func: Callable) -> LazyLines:
+        """
+        Apply a function to each item before yielding it back.
+        
+        Arguments:
+            func: the function to call on each item
+        """
 
         def new_gen():
             for item in self.g:
@@ -164,19 +183,73 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def tee(self, n=2) -> Tuple[LazyLines]:
-        """Copies the lazylines."""
+    def tee(self, n:int=2) -> Tuple[LazyLines]:
+        """
+        Copies the lazylines.
+        
+        Arguments:
+            n: how often to `tee` the stream
+
+        Usage:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [
+            {'accept': True, 'annotator': 'a', 'text': 'foo'},
+            {'accept': True, 'annotator': 'a', 'text': 'foobar'},
+            {'accept': True, 'annotator': 'b', 'text': 'foo'},
+            {'accept': True, 'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        lines1, lines2 = LazyLines(data).tee(n=2)
+        lines1, lines2, lines3 = LazyLines(data).tee(n=3)
+        ```
+        """
         return tuple(LazyLines(g=gen) for gen in it.tee(self.g, n))
 
     def __iter__(self):
-        return self.g
+        return iter(self.g)
 
-    def sort_by(self, *cols) -> LazyLines:
-        """Sort the items."""
-        return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in cols])))
+    def sort_by(self, *keys: str) -> LazyLines:
+        """
+        Sort the items based on a subset of the keys.
+        
+        Arguments:
+            keys: the keys to use for sorting
+        """
+        return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in keys])))
 
-    def rename(self, **kwargs) -> LazyLines:
-        """Rename a few keys in each item."""
+    def rename(self, **kwargs: Dict[str, str]) -> LazyLines:
+        """
+        Rename a few keys in each item.
+        
+        Arguments:
+            kwargs: str/str pairs that resemble the new name and old name of a key
+
+        Usage:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [
+            {'labeller': 'a', 'text': 'foo'},
+            {'labeller': 'a', 'text': 'foobar'},
+            {'labeller': 'b', 'text': 'foo'},
+            {'labeller': 'b', 'text': 'foobar'}
+        ]
+
+        expected = [
+            {'annotator': 'a', 'text': 'foo'},
+            {'annotator': 'a', 'text': 'foobar'},
+            {'annotator': 'b', 'text': 'foo'},
+            {'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        result = (LazyLines(data).rename(annotator="labeller").collect())
+        assert result == expected
+        ```
+        """
 
         def new_gen():
             for item in self.g:
@@ -185,11 +258,14 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def nest_by(self, *args) -> LazyLines:
+    def nest_by(self, *keys: str) -> LazyLines:
         """
         Group by keys and return nested collections.
 
         The opposite of `.unnest()`
+
+        Arguments:
+            keys: the keys to nest by
 
         **Usage**:
 
@@ -218,44 +294,113 @@ class LazyLines:
         """
         groups = {}
         for example in self.g:
-            key = tuple(example.get(arg, None) for arg in args)
+            key = tuple(example.get(arg, None) for arg in keys)
             if key not in groups:
                 groups[key] = []
-            for arg in args:
+            for arg in keys:
                 del example[arg]
             groups[key].append(example)
         result = []
         for key, values in groups.items():
-            result.append({**{k: v for k, v in zip(args, key)}, "subset": values})
+            result.append({**{k: v for k, v in zip(keys, key)}, "subset": values})
         return LazyLines(result)
 
-    def progress(self, desc: Optional[str] = None) -> LazyLines:
+    def progress(self, desc=Optional[str]) -> LazyLines:
         """Adds a progress bar. Meant to be used early."""
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
-        return LazyLines(g=tqdm.tqdm(stream_orig, total=total, desc=desc))
+
+        def new_gen():
+            for ex in tqdm.tqdm(stream_orig, total=total, desc=desc):
+                yield ex
+                
+        return LazyLines(g=new_gen())
 
     def collect(self) -> LazyLines:
-        """Turns the collection into a list."""
+        """
+        Turns the (final) sequence into a list.
+        
+        Note that, as a consequence, this will also empty the lazyline object.
+        """
         return [ex for ex in self.g]
 
     def write_jsonl(
         self, path, append: bool = False, append_new_line: bool = True
     ) -> LazyLines:
-        """Write everything into a jsonl file again."""
+        """
+        Write everything into a jsonl file.
+        
+        Note that, as a consequence, this will also empty the lazyline object.
+        """
         srsly.write_jsonl(path, self.g, append=append, append_new_line=append_new_line)
 
-    def select(self, *args) -> LazyLines:
-        """Only select specific keys from each dictionary."""
+    def select(self, *keys: str) -> LazyLines:
+        """
+        Only select specific keys from each dictionary.
+        
+        Arguments:
+            keys: the names of the keys to be kept around
+
+        Usage:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [
+            {'accept': True, 'annotator': 'a', 'text': 'foo'},
+            {'accept': True, 'annotator': 'a', 'text': 'foobar'},
+            {'accept': True, 'annotator': 'b', 'text': 'foo'},
+            {'accept': True, 'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        expected = [
+            {'annotator': 'a', 'text': 'foo'},
+            {'annotator': 'a', 'text': 'foobar'},
+            {'annotator': 'b', 'text': 'foo'},
+            {'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        result = LazyLines(data).select("annotator", "text")
+        assert result.collect() == expected
+        ```
+        """
 
         def new_gen():
             for ex in self.g:
-                yield {k: v for k, v in ex.items() if k in args}
+                yield {k: v for k, v in ex.items() if k in keys}
 
         return LazyLines(g=new_gen())
 
     def drop(self, *args) -> LazyLines:
-        """Drop specific keys from each dictionary."""
+        """
+        Drop specific keys from each dictionary.
+        
+        Arguments:
+            keys: the names of the keys to be kept around
+        
+        Usage:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [
+            {'accept': True, 'annotator': 'a', 'text': 'foo'},
+            {'accept': True, 'annotator': 'a', 'text': 'foobar'},
+            {'accept': True, 'annotator': 'b', 'text': 'foo'},
+            {'accept': True, 'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        expected = [
+            {'annotator': 'a', 'text': 'foo'},
+            {'annotator': 'a', 'text': 'foobar'},
+            {'annotator': 'b', 'text': 'foo'},
+            {'annotator': 'b', 'text': 'foobar'}
+        ]
+
+        result = LazyLines(data).drop("accept")
+        assert result.collect() == expected
+        ```
+        """
 
         def new_gen():
             for ex in self.g:
@@ -277,7 +422,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
     
-    def agg(self, **kwargs):
+    def agg(self, **kwargs: Dict[str, Callable]):
         data = [ex for ex in self.g]
         return {
             k: func(data) for k, func in kwargs.items()
