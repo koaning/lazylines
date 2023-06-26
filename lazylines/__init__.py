@@ -153,7 +153,10 @@ class LazyLines:
 
         def new_gen():
             for _ in range(n):
-                yield next(self.g)
+                try:
+                    yield next(self.g)
+                except StopIteration:
+                    pass
 
         return LazyLines(g=new_gen())
 
