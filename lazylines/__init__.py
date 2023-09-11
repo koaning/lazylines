@@ -160,7 +160,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def show(self, n: int=5) -> LazyLines:
+    def show(self, n: int=1) -> LazyLines:
         """
         Give a preview of the first `n` examples. 
 
