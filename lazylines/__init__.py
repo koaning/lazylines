@@ -431,3 +431,27 @@ class LazyLines:
         return {
             k: func(data) for k, func in kwargs.items()
         }
+    
+    def validate(self, pydantic_cls) -> LazyLines:
+        """
+        Validates each example with a Pydantic class. Then dumps the result back.
+        
+        Usage:
+        
+        ```python
+        from pydantic import BaseModel, PositiveInt
+        from lazylines import LazyLines
+
+        class Example(BaseModel):
+            id: int  
+            positive_int: PositiveInt
+
+        lines = LazyLines(({"id": i, "positive_int": str(i)} for i in range(1, 10)))
+        collected = lines.validate(Example).collect()
+        
+        assert collected[0] == {'id': 1, 'positive_int': 1}
+        assert collected[1] == {'id': 2, 'positive_int': 2}
+        ```
+        """
+        new_gen = (pydantic_cls(**ex).model_dump() for ex in self.g)
+        return LazyLines(g=new_gen)
