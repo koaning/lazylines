@@ -426,11 +426,43 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
     
-    def agg(self, **kwargs: Dict[str, Callable]):
-        data = [ex for ex in self.g]
-        return {
-            k: func(data) for k, func in kwargs.items()
-        }
+    def agg(self, *args: Callable):
+        """
+        Allows you to aggregate over all the items using special functions
+        that will go over each item exactly once. 
+
+        This function hopefully makes some things faster, but for something
+        specialized it's best to just write a custom `.pipe()` function.
+
+        ```python
+        from lazylines import LazyLines
+        from lazylines.functions import calc_mean, count
+
+        examples = [
+            {'foo': 1, 'bar': 2},
+            {'foo': 3, 'bar': 2},
+            {'foo': -1, 'bar': 1},
+        ]
+
+        lines = LazyLines(examples)
+
+        out = lines.agg(calc_mean('foo'), calc_mean('bar'), count())
+        expected = {'mean_foo': 3, 'mean_bar': 5, 'count': 3}
+        assert out == expected
+        ```
+        """
+
+        accumulators = {}
+        values = {}
+        for arg in args:
+            name, func = arg
+            accumulators[name] = func
+        
+        for ex in self.g:
+            for name, func in accumulators.items():
+                values[name] = func(ex)
+        
+        return values
     
     def validate(self, pydantic_cls) -> LazyLines:
         """
