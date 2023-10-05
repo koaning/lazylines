@@ -2,7 +2,7 @@ import os
 
 from setuptools import find_packages, setup
 
-base_packages = ["srsly>=2.0.8", "tqdm>=4.64.1"]
+base_packages = ["srsly>=2.0.8", "tqdm>=4.64.1", "pydantic>=2.0.0"]
 
 test_packages = [
     "pytest>=5.4.3",
@@ -38,10 +38,11 @@ setup(
     classifiers=[
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "License :: OSI Approved :: MIT License",
     ],
 )

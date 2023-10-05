@@ -27,6 +27,40 @@ def pluck_from_subset(key:str, subset_key:str="subset"):
     return func
 
 
+class _MeanAccumulator:
+    def __init__(self, name):
+        self.name = name
+        self.accum = 0
+        self.n = 0
+    
+    def __call__(self, ex):
+        self.accum += ex[self.name]
+        self.n += 1
+        return self.accum
+
+class _CountAccumulator:
+    def __init__(self, name:str=None):
+        self.name = name
+        self.accum = 0
+    
+    def __call__(self, ex):
+        if self.name is None:
+            self.accum += 1
+        else:
+            self.accum += 1 if self.name in ex else 0
+        return self.accum
+
+def calc_mean(col:str):
+    """Can be used to calculate the mean of a key in a LazyLines collection"""
+    return f"mean_{col}", _MeanAccumulator(col)
+
+def count(col:str=None):
+    """Can be used to count the number of items in a LazyLines collection"""
+    name = f"count_{col}"
+    if col is None:
+        name = "count"
+    return name, _CountAccumulator(col)
+
 def calc_agreement(lines: LazyLines, label: str):
     return (lines
          .nest_by("text")

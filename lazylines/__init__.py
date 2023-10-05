@@ -38,7 +38,8 @@ class LazyLines:
 
         items = ({"a": i} for i in range(100))
 
-        # The intermediate representation is now a list.
+        # The output is still a LazyLines object, but the intermediate representation 
+        # is now a list which might speedup repeated downstream tasks
         cached = (LazyLines(items).cache())
         ```
         """
@@ -426,8 +427,64 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
     
-    def agg(self, **kwargs: Dict[str, Callable]):
-        data = [ex for ex in self.g]
-        return {
-            k: func(data) for k, func in kwargs.items()
-        }
+    def agg(self, *args: Callable):
+        """
+        Allows you to aggregate over all the items using special functions
+        that will go over each item exactly once. 
+
+        This function hopefully makes some things faster, but for something
+        specialized it's best to just write a custom `.pipe()` function.
+
+        ```python
+        from lazylines import LazyLines
+        from lazylines.functions import calc_mean, count
+
+        examples = [
+            {'foo': 1, 'bar': 2},
+            {'foo': 3, 'bar': 2},
+            {'foo': -1, 'bar': 1},
+        ]
+
+        lines = LazyLines(examples)
+
+        out = lines.agg(calc_mean('foo'), calc_mean('bar'), count())
+        expected = {'mean_foo': 3, 'mean_bar': 5, 'count': 3}
+        assert out == expected
+        ```
+        """
+
+        accumulators = {}
+        values = {}
+        for arg in args:
+            name, func = arg
+            accumulators[name] = func
+        
+        for ex in self.g:
+            for name, func in accumulators.items():
+                values[name] = func(ex)
+        
+        return values
+    
+    def validate(self, pydantic_cls) -> LazyLines:
+        """
+        Validates each example with a Pydantic class. Then dumps the result back.
+        
+        Usage:
+        
+        ```python
+        from pydantic import BaseModel, PositiveInt
+        from lazylines import LazyLines
+
+        class Example(BaseModel):
+            id: int  
+            positive_int: PositiveInt
+
+        lines = LazyLines(({"id": i, "positive_int": str(i)} for i in range(1, 10)))
+        collected = lines.validate(Example).collect()
+        
+        assert collected[0] == {'id': 1, 'positive_int': 1}
+        assert collected[1] == {'id': 2, 'positive_int': 2}
+        ```
+        """
+        new_gen = (pydantic_cls(**ex).model_dump() for ex in self.g)
+        return LazyLines(g=new_gen)
