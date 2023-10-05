@@ -38,7 +38,8 @@ class LazyLines:
 
         items = ({"a": i} for i in range(100))
 
-        # The intermediate representation is now a list.
+        # The output is still a LazyLines object, but the intermediate representation 
+        # is now a list which might speedup repeated downstream tasks
         cached = (LazyLines(items).cache())
         ```
         """
