@@ -4,6 +4,7 @@ nav:
   - Index: index.md
   - Examples: examples.md
   - API: api.md
+  - Helpers: helpers.md
   
 theme:
   name: material
