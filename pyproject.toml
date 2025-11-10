@@ -36,6 +36,7 @@ dev = [
     "mkdocs-material",
     "mkdocstrings-python",
     "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
 ]
 
 [tool.setuptools.packages.find]
