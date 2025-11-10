@@ -105,7 +105,7 @@ class LazyLines:
 
     def unnest(self, key: str = "subset") -> LazyLines:
         """
-        Explodes a key, effectively un-nesting it.
+        Un-nests a list of dictionaries in a key
 
         Arguments:
             key: the key to un-nest
@@ -139,6 +139,40 @@ class LazyLines:
                 for value in item[key]:
                     orig = {k: v for k, v in item.items() if k != key}
                     d = {**value, **orig}
+                    yield d
+
+        return LazyLines(g=new_gen())
+
+    def explode(self, key: str) -> LazyLines:
+        """
+        Explodes a key, effectively un-nesting it.
+
+        Arguments:
+            key: the key to explode
+
+        **Usage**:
+
+        ```python
+        from lazylines import LazyLines
+
+        data = [{'foo': 'a', 'bar': [1, 2, 3]}]
+
+        expected = [
+            {'foo': 'a', 'bar': 1},
+            {'foo': 'a', 'bar': 2},
+            {'foo': 'a', 'bar': 3},
+        ]
+
+        result = LazyLines(data).explode("bar").collect()
+        assert result == expected
+        ```
+        """
+
+        def new_gen():
+            for item in self.g:
+                for value in item[key]:
+                    orig = {k: v for k, v in item.items() if k != key}
+                    d = {**orig, key: value}
                     yield d
 
         return LazyLines(g=new_gen())
