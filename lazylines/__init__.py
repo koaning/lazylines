@@ -154,9 +154,7 @@ class LazyLines:
         ```python
         from lazylines import LazyLines
 
-        data = [{'foo': 'a',
-                 'bar': [1, 2, 3],
-                }]
+        data = [{'foo': 'a', 'bar': [1, 2, 3]}]
 
         expected = [
             {'foo': 'a', 'bar': 1},
@@ -173,7 +171,7 @@ class LazyLines:
             for item in self.g:
                 for value in item[key]:
                     orig = {k: v for k, v in item.items() if k != key}
-                    d = {**value, **orig}
+                    d = {**orig, key: value}
                     yield d
 
         return LazyLines(g=new_gen())
