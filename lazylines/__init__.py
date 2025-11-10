@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import contextlib
+import csv
 import itertools as it
 import pprint
+import urllib.request
 from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -11,8 +13,93 @@ import tqdm
 
 
 def read_jsonl(path: str | Path) -> LazyLines:
-    """Read .jsonl file and turn it into a LazyLines object."""
-    return LazyLines(srsly.read_jsonl(path))
+    """
+    Read .jsonl file and turn it into a LazyLines object.
+
+    Supports both local files and URLs (http/https).
+
+    Arguments:
+        path: Local file path or URL to a .jsonl file
+
+    Usage:
+
+    ```python
+    from lazylines import read_jsonl
+
+    # Read from local file
+    lines = read_jsonl("data.jsonl")
+
+    # Read from URL
+    lines = read_jsonl("https://calmcode.io/static/data/pokemon.jsonl")
+    ```
+    """
+    path_str = str(path)
+    if path_str.startswith(("https:", "http:")):
+        # Handle URL
+        def url_gen():
+            with urllib.request.urlopen(path_str) as resp:  # nosec
+                for line in resp:
+                    yield srsly.json_loads(line.decode().strip())
+        return LazyLines(url_gen())
+    else:
+        # Handle local file
+        return LazyLines(srsly.read_jsonl(path))
+
+
+def read_csv(
+    path: str | Path,
+    delimiter: str = ",",
+    fieldnames: list[str] | None = None,
+) -> LazyLines:
+    """
+    Read CSV file and turn it into a LazyLines object.
+
+    Supports both local files and URLs (http/https).
+
+    Arguments:
+        path: Local file path or URL to a CSV file
+        delimiter: Delimiter used in the CSV file. Must be a single character and ',' is the default
+        fieldnames: Allows you to set the fieldnames if the header is missing. By default, the first
+                   row of the CSV will provide the LazyLines keys if fieldnames is None. If fieldnames
+                   is provided, then the first row becomes part of the data
+
+    Usage:
+
+    ```python
+    from lazylines import read_csv
+
+    # Read from URL
+    lines = read_csv("https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv")
+    assert len(lines.head(5).collect()) == 5
+    ```
+    """
+    path_str = str(path)
+
+    if path_str.startswith(("https:", "http:")):
+        # Handle URL
+        def url_gen():
+            with urllib.request.urlopen(path_str) as resp:  # nosec
+                # Get fieldnames from first line if not provided
+                nonlocal fieldnames
+                if fieldnames is None:
+                    first_line = resp.readline().decode().strip()
+                    fieldnames = first_line.split(delimiter)
+
+                # Read data rows
+                for line in resp:
+                    values = line.decode().strip().split(delimiter)
+                    yield dict(zip(fieldnames, values))
+
+        return LazyLines(url_gen())
+    else:
+        # Handle local file
+        def file_gen():
+            with open(path_str, newline="") as csvfile:
+                reader = csv.DictReader(csvfile, delimiter=delimiter, fieldnames=fieldnames)
+                for row in reader:
+                    yield dict(row)
+
+        return LazyLines(file_gen())
 
 
 class LazyLines:
