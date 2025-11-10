@@ -40,6 +40,7 @@ def read_jsonl(path: str | Path) -> LazyLines:
             with urllib.request.urlopen(path_str) as resp:  # nosec
                 for line in resp:
                     yield srsly.json_loads(line.decode().strip())
+
         return LazyLines(url_gen())
     else:
         # Handle local file

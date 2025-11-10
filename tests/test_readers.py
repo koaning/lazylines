@@ -30,12 +30,7 @@ def test_read_csv_local(tmp_path):
     assert result[0] == {"col1": "name", "col2": "age", "col3": "city"}
 
     # Method chaining
-    result = (
-        read_csv(csv_file)
-        .mutate(age_plus_10=lambda d: str(int(d["age"]) + 10))
-        .select("name", "age_plus_10")
-        .collect()
-    )
+    result = read_csv(csv_file).mutate(age_plus_10=lambda d: str(int(d["age"]) + 10)).select("name", "age_plus_10").collect()
     assert result[0] == {"name": "Alice", "age_plus_10": "40"}
 
 
