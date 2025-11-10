@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lazylines"
-version = "0.0.4"
+version = "0.1.0"
 description = "A lazy way to process lines from files"
 authors = [
     {name = "Vincent D. Warmerdam"}
