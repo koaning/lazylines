@@ -1,10 +1,13 @@
 from pprint import pprint
+
+import pytest
+
 from lazylines import LazyLines
-import pytest 
+
 
 @pytest.fixture
 def data():
-    return ({"a": i, "b": i+1, "c": i % 2, "d": i % 3} for i in range(100))
+    return ({"a": i, "b": i + 1, "c": i % 2, "d": i % 3} for i in range(100))
 
 
 def test_rename(data):
@@ -40,5 +43,3 @@ def test_nest(data):
         assert "b" not in item
         assert "c" in item
         assert "d" in item
-
-        

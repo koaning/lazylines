@@ -1,29 +1,44 @@
-black:
-	black lazylines tests setup.py --check
+format:
+	uv run ruff format lazylines tests
 
-flake:
-	flake8 lazylines tests setup.py
+lint:
+	uv run ruff check lazylines tests
+
+lint-fix:
+	uv run ruff check --fix lazylines tests
 
 test:
-	pytest
+	uv run pytest
 
 interrogate:
-	interrogate -vv --ignore-nested-functions --ignore-semiprivate --ignore-private --ignore-magic --ignore-module --ignore-init-method --fail-under 100 tests
-	interrogate -vv --ignore-nested-functions --ignore-semiprivate --ignore-private --ignore-magic --ignore-module --ignore-init-method --fail-under 100 lazylines
+	uv run interrogate -vv --ignore-nested-functions --ignore-semiprivate --ignore-private --ignore-magic --ignore-module --ignore-init-method --fail-under 100 tests
+	uv run interrogate -vv --ignore-nested-functions --ignore-semiprivate --ignore-private --ignore-magic --ignore-module --ignore-init-method --fail-under 100 lazylines
 
-check: clean black flake test interrogate
+check: format lint test interrogate
+
+setup:
+	@echo "Setting up development environment..."
+	@command -v uv >/dev/null 2>&1 || { echo "Installing uv..."; curl -LsSf https://astral.sh/uv/install.sh | sh; }
+	@if [ -d .venv ]; then \
+		echo "Removing existing .venv..."; \
+		rm -rf .venv; \
+	fi
+	@echo "Creating virtual environment..."
+	uv venv
+	@echo "Installing dependencies..."
+	uv sync --all-extras
+	@echo "Installing pre-commit hooks..."
+	uv run pre-commit install
+	@echo "Setup complete! Activate the virtualenv with: source .venv/bin/activate"
 
 install:
-	python -m pip install -e ".[dev]"
+	uv sync --all-extras
 
 pypi:
-	python setup.py sdist
-	python setup.py bdist_wheel --universal
-	twine upload dist/*
+	uv build
+	uv publish
 
 clean:
 	rm -rf **/.ipynb_checkpoints **/.pytest_cache **/__pycache__ **/**/__pycache__ .ipynb_checkpoints .pytest_cache
-	black lazylines tests setup.py
-	isort lazylines tests setup.py
-	autoflake lazylines/*.py  --in-place
-	autoflake tests/*.py  --in-place
+	uv run ruff format lazylines tests
+	uv run ruff check --fix lazylines tests

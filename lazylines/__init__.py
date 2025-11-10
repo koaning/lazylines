@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import contextlib
 import itertools as it
 import pprint
 from pathlib import Path
-from typing import Tuple, Union, Dict, Callable, Optional
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import srsly
 import tqdm
 
 
-def read_jsonl(path: Union[str, Path]) -> LazyLines:
+def read_jsonl(path: str | Path) -> LazyLines:
     """Read .jsonl file and turn it into a LazyLines object."""
     return LazyLines(srsly.read_jsonl(path))
 
@@ -38,14 +39,14 @@ class LazyLines:
 
         items = ({"a": i} for i in range(100))
 
-        # The output is still a LazyLines object, but the intermediate representation 
+        # The output is still a LazyLines object, but the intermediate representation
         # is now a list which might speedup repeated downstream tasks
         cached = (LazyLines(items).cache())
         ```
         """
         return LazyLines(g=list(self.g))
 
-    def mutate(self, **kwargs: Dict[str, Callable]) -> LazyLines:
+    def mutate(self, **kwargs: dict[str, Callable]) -> LazyLines:
         """
         Adds/overwrites keys in the dictionary based on lambda.
 
@@ -102,7 +103,7 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def unnest(self, key: str="subset") -> LazyLines:
+    def unnest(self, key: str = "subset") -> LazyLines:
         """
         Explodes a key, effectively un-nesting it.
 
@@ -154,16 +155,14 @@ class LazyLines:
 
         def new_gen():
             for _ in range(n):
-                try:
+                with contextlib.suppress(StopIteration):
                     yield next(self.g)
-                except StopIteration:
-                    pass
 
         return LazyLines(g=new_gen())
 
-    def show(self, n: int=1) -> LazyLines:
+    def show(self, n: int = 1) -> LazyLines:
         """
-        Give a preview of the first `n` examples. 
+        Give a preview of the first `n` examples.
 
         Arguments:
             n: the number of examples to preview
@@ -176,7 +175,7 @@ class LazyLines:
     def map(self, func: Callable) -> LazyLines:
         """
         Apply a function to each item before yielding it back.
-        
+
         Arguments:
             func: the function to call on each item
         """
@@ -187,10 +186,10 @@ class LazyLines:
 
         return LazyLines(g=new_gen())
 
-    def tee(self, n:int=2) -> Tuple[LazyLines]:
+    def tee(self, n: int = 2) -> tuple[LazyLines]:
         """
         Copies the lazylines.
-        
+
         Arguments:
             n: how often to `tee` the stream
 
@@ -218,16 +217,16 @@ class LazyLines:
     def sort_by(self, *keys: str) -> LazyLines:
         """
         Sort the items based on a subset of the keys.
-        
+
         Arguments:
             keys: the keys to use for sorting
         """
         return LazyLines(g=sorted(self.g, key=lambda d: tuple([d[c] for c in keys])))
 
-    def rename(self, **kwargs: Dict[str, str]) -> LazyLines:
+    def rename(self, **kwargs: dict[str, str]) -> LazyLines:
         """
         Rename a few keys in each item.
-        
+
         Arguments:
             kwargs: str/str pairs that resemble the new name and old name of a key
 
@@ -307,34 +306,31 @@ class LazyLines:
             groups[key].append(example)
         result = []
         for key, values in groups.items():
-            result.append({**{k: v for k, v in zip(keys, key)}, "subset": values})
+            result.append({**dict(zip(keys, key)), "subset": values})
         return LazyLines(result)
 
-    def progress(self, desc:Optional[str]=None) -> LazyLines:
+    def progress(self, desc: str | None = None) -> LazyLines:
         """Adds a progress bar. Meant to be used early."""
         stream_orig, stream_copy = it.tee(self.g)
         total = sum(1 for _ in stream_copy)
 
         def new_gen():
-            for ex in tqdm.tqdm(stream_orig, total=total, desc=desc):
-                yield ex
+            yield from tqdm.tqdm(stream_orig, total=total, desc=desc)
 
         return LazyLines(g=new_gen())
 
     def collect(self) -> LazyLines:
         """
         Turns the (final) sequence into a list.
-        
+
         Note that, as a consequence, this will also empty the lazyline object.
         """
-        return [ex for ex in self.g]
+        return list(self.g)
 
-    def write_jsonl(
-        self, path, append: bool = False, append_new_line: bool = True
-    ) -> LazyLines:
+    def write_jsonl(self, path, append: bool = False, append_new_line: bool = True) -> LazyLines:
         """
         Write everything into a jsonl file.
-        
+
         Note that, as a consequence, this will also empty the lazyline object.
         """
         srsly.write_jsonl(path, self.g, append=append, append_new_line=append_new_line)
@@ -342,7 +338,7 @@ class LazyLines:
     def select(self, *keys: str) -> LazyLines:
         """
         Only select specific keys from each dictionary.
-        
+
         Arguments:
             keys: the names of the keys to be kept around
 
@@ -379,10 +375,10 @@ class LazyLines:
     def drop(self, *args) -> LazyLines:
         """
         Drop specific keys from each dictionary.
-        
+
         Arguments:
             keys: the names of the keys to be kept around
-        
+
         Usage:
 
         ```python
@@ -426,11 +422,11 @@ class LazyLines:
                 yield ex
 
         return LazyLines(g=new_gen())
-    
+
     def agg(self, *args: Callable):
         """
         Allows you to aggregate over all the items using special functions
-        that will go over each item exactly once. 
+        that will go over each item exactly once.
 
         This function hopefully makes some things faster, but for something
         specialized it's best to just write a custom `.pipe()` function.
@@ -458,30 +454,30 @@ class LazyLines:
         for arg in args:
             name, func = arg
             accumulators[name] = func
-        
+
         for ex in self.g:
             for name, func in accumulators.items():
                 values[name] = func(ex)
-        
+
         return values
-    
+
     def validate(self, pydantic_cls) -> LazyLines:
         """
         Validates each example with a Pydantic class. Then dumps the result back.
-        
+
         Usage:
-        
+
         ```python
         from pydantic import BaseModel, PositiveInt
         from lazylines import LazyLines
 
         class Example(BaseModel):
-            id: int  
+            id: int
             positive_int: PositiveInt
 
         lines = LazyLines(({"id": i, "positive_int": str(i)} for i in range(1, 10)))
         collected = lines.validate(Example).collect()
-        
+
         assert collected[0] == {'id': 1, 'positive_int': 1}
         assert collected[1] == {'id': 2, 'positive_int': 2}
         ```
